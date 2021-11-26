@@ -20,14 +20,14 @@ loadSprite("pipeTopRight", "pipeTopRight.png");
 loadSprite("pipeBottomLeft", "pipeBottomLeft.png");
 loadSprite("pipeBottomRight", "pipeBottomRight.png");
 
-const MOVE_SPEED = 120;
-const JUMP_FORCE = 300;
-const BIG_JUMP_FORCE = 400;
-const ENEMY_SPEED = 30;
+const MOVE_SPEED = 170;
+const JUMP_FORCE = 370;
+const BIG_JUMP_FORCE = 420;
+let ENEMY_SPEED = 30;
 let CURRENT_JUMP_FORCE = JUMP_FORCE;
 let isJumping = false;
 const FALL_DEATH = 600;
-const ENEMY_LOOP = 300;
+const ENEMY_LOOP = 500;
 let CURRENT_ENEMY_LOOP = ENEMY_LOOP;
 let ENEMY_DIRECTION = "left";
 
@@ -36,27 +36,60 @@ scene("game", ({ level, score }) => {
 
   const maps = [
     [
-      "                                   ",
-      "                                   ",
-      "                                   ",
-      "                                   ",
-      "                      @            ",
-      "                    ====           ",
-      "                 @                 ",
-      "               ====                ",
-      "           @                       ",
-      "=%=       ==*=                     ",
-      "                                () ",
-      "                    <           {} ",
-      "===================================",
+      "                                                                                                                  ",
+      "                                                                                                                  ",
+      "                                                                                                                  ",
+      "                                                                                                                  ",
+      "                                                                                                                  ",
+      "                                                                                                                  ",
+      "                                                                                                                  ",
+      "                                      @@                                                                          ",
+      "                                     ----                                                                =        ",
+      "            -%-%%%-   -*-                                                                              = =        ",
+      "                                                                                                     = = =    ()  ",
+      "                      <               <                     @      @                <              = = = =    {}  ",
+      "======================================================      =      =      ================================    ====",
     ],
-    [],
+    [
+      "                                                                                                                  ",
+      "                                                                                                                  ",
+      "       @          @                                                      @                 @@@@@                  ",
+      "       -      =   =                                  -------------*---------        -------------                 ",
+      "              =   =                                  -                                                            ",
+      "              =   =                                  -              <                                             ",
+      "      %       =   =                                  -   -------------------                                      ",
+      "              =   =                                  -                     -                                      ",
+      "              =   =                                  -        <            -                                 ()   ",
+      "       -      =   =                                  -------------------   -                                 {}   ",
+      "              =   =                                  -                     -                                 {}   ",
+      "              =   =       @     <                              <           -            <          <        ={}   ",
+      "===============   ==========================   ===================================================================",
+      "                                                                                                                  ",
+      "          @             <     <      <                                                                            ",
+      "          ==  ==============================                                                                      ",
+    ],
+    [
+      "                                                                                                                  ",
+      "                                                                                                                  ",
+      "                                                                                                                  ",
+      "                                                                                                                  ",
+      "                                                    @                                                             ",
+      "                                                    =                                                             ",
+      "                                              @                                                                   ",
+      "                                              =                                                        %      ()  ",
+      "                                         @                                                     @      @       {}  ",
+      "                                         =                              @                  @   =      =      ={}= ",
+      "                               @     @                                  =                  =                 ={}= ",
+      "           @      @      @     =     =                      @      @           @      @                      ={}= ",
+      "=====      =      =      =                                  =      =           =      =                      ==== ",
+    ],
   ];
 
   const levelCfg = {
     width: 20,
     height: 20,
     "=": [sprite("block"), solid()],
+    "-": [sprite("brick"), solid()],
     "@": [sprite("coin"), "coin"],
     "%": [sprite("surprise"), solid(), "coinSurprise"],
     "*": [sprite("surprise"), solid(), "mushroomSurprise"],
@@ -128,7 +161,6 @@ scene("game", ({ level, score }) => {
   });
 
   action("dangerous", (d) => {
-    console.log(CURRENT_ENEMY_LOOP, ENEMY_DIRECTION);
     if (CURRENT_ENEMY_LOOP <= 0) {
       CURRENT_ENEMY_LOOP = ENEMY_LOOP;
       if (ENEMY_DIRECTION === "left") {
@@ -136,6 +168,12 @@ scene("game", ({ level, score }) => {
       } else {
         ENEMY_DIRECTION = "left";
       }
+    }
+    if (level === 0) {
+      ENEMY_SPEED = 30;
+    }
+    if (level === 1) {
+      ENEMY_SPEED = 90;
     }
     if (ENEMY_DIRECTION === "left") {
       d.move(-ENEMY_SPEED, 0);
@@ -190,7 +228,7 @@ scene("game", ({ level, score }) => {
 
   player.collides("pipe", () => {
     keyPress("down", () => {
-      go("game", { level: level + 1, score: scoreLabel.value });
+      go("game", { level: (level + 1) % maps.length, score: scoreLabel.value });
     });
   });
 
@@ -209,6 +247,8 @@ scene("game", ({ level, score }) => {
   player.action(() => {
     if (player.grounded()) {
       isJumping = false;
+    } else {
+      isJumping = true;
     }
   });
 
@@ -222,6 +262,10 @@ scene("game", ({ level, score }) => {
 
 scene("lose", ({ score }) => {
   add([text(score, 32), origin("center"), pos(width() / 2, height() / 2)]);
+
+  keyPress("space", () => {
+    location.reload();
+  });
 });
 
-start("game", { level: 0, score: 0 });
+start("game", { level: 2, score: 0 });
