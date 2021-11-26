@@ -27,24 +27,30 @@ const ENEMY_SPEED = 30;
 let CURRENT_JUMP_FORCE = JUMP_FORCE;
 let isJumping = false;
 const FALL_DEATH = 600;
+const ENEMY_LOOP = 300;
+let CURRENT_ENEMY_LOOP = ENEMY_LOOP;
+let ENEMY_DIRECTION = "left";
 
 scene("game", ({ level, score }) => {
   layers(["bg", "obj", "ui"], "obj");
 
-  const map = [
-    "                                   ",
-    "                                   ",
-    "                                   ",
-    "                                   ",
-    "                      @            ",
-    "                    ====           ",
-    "                 @                 ",
-    "               ====                ",
-    "           @                       ",
-    "=%=       ==*=                     ",
-    "                                () ",
-    "                    <           {} ",
-    "==========================     ====",
+  const maps = [
+    [
+      "                                   ",
+      "                                   ",
+      "                                   ",
+      "                                   ",
+      "                      @            ",
+      "                    ====           ",
+      "                 @                 ",
+      "               ====                ",
+      "           @                       ",
+      "=%=       ==*=                     ",
+      "                                () ",
+      "                    <           {} ",
+      "===================================",
+    ],
+    [],
   ];
 
   const levelCfg = {
@@ -63,7 +69,7 @@ scene("game", ({ level, score }) => {
     "#": [sprite("mushroom"), solid(), "mushroom", body()],
   };
 
-  const gameLevel = addLevel(map, levelCfg);
+  const gameLevel = addLevel(maps[level], levelCfg);
 
   const scoreLabel = add([
     text("points " + score),
@@ -122,7 +128,23 @@ scene("game", ({ level, score }) => {
   });
 
   action("dangerous", (d) => {
-    d.move(-ENEMY_SPEED, 0);
+    console.log(CURRENT_ENEMY_LOOP, ENEMY_DIRECTION);
+    if (CURRENT_ENEMY_LOOP <= 0) {
+      CURRENT_ENEMY_LOOP = ENEMY_LOOP;
+      if (ENEMY_DIRECTION === "left") {
+        ENEMY_DIRECTION = "right";
+      } else {
+        ENEMY_DIRECTION = "left";
+      }
+    }
+    if (ENEMY_DIRECTION === "left") {
+      d.move(-ENEMY_SPEED, 0);
+      CURRENT_ENEMY_LOOP -= 1;
+    }
+    if (ENEMY_DIRECTION === "right") {
+      d.move(ENEMY_SPEED, 0);
+      CURRENT_ENEMY_LOOP -= 1;
+    }
   });
 
   player.on("headbump", (obj) => {
