@@ -20,6 +20,9 @@ loadSprite("pipeTopRight", "pipeTopRight.png");
 loadSprite("pipeBottomLeft", "pipeBottomLeft.png");
 loadSprite("pipeBottomRight", "pipeBottomRight.png");
 
+const MOVE_SPEED = 120;
+const JUMP_FORCE = 300;
+
 scene("game", () => {
   layers(["bg", "obj", "ui"], "obj");
 
@@ -58,11 +61,13 @@ scene("game", () => {
   const gameLevel = addLevel(map, levelCfg);
 
   const scoreLabel = add([
-    text(score),
-    pos(30, 6),
+    text("test"),
+    pos(15, 15),
     layer("ui"),
-    { value: score },
+    { value: "test" },
   ]);
+
+  add([text("level " + "test", pos(4, 6))]);
 
   const player = add([
     sprite("mario"),
@@ -71,6 +76,20 @@ scene("game", () => {
     body(),
     origin("bot"),
   ]);
+
+  keyDown("left", () => {
+    player.move(-MOVE_SPEED, 0);
+  });
+
+  keyDown("right", () => {
+    player.move(MOVE_SPEED, 0);
+  });
+
+  keyPress("space", () => {
+    if (player.grounded()) {
+      player.jump(JUMP_FORCE);
+    }
+  });
 });
 
 start("game");
