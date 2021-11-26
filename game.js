@@ -22,8 +22,13 @@ loadSprite("pipeBottomRight", "pipeBottomRight.png");
 
 const MOVE_SPEED = 120;
 const JUMP_FORCE = 300;
+const BIG_JUMP_FORCE = 400;
+const ENEMY_SPEED = 30;
+let CURRENT_JUMP_FORCE = JUMP_FORCE;
+let isJumping = false;
+const FALL_DEATH = 600;
 
-scene("game", () => {
+scene("game", ({ level, score }) => {
   layers(["bg", "obj", "ui"], "obj");
 
   const map = [
@@ -36,7 +41,7 @@ scene("game", () => {
     "                 @                 ",
     "               ====                ",
     "           @                       ",
-    "=*=       ==%=                     ",
+    "=%=       ==*=                     ",
     "                                () ",
     "                    <           {} ",
     "==========================     ====",
@@ -46,50 +51,155 @@ scene("game", () => {
     width: 20,
     height: 20,
     "=": [sprite("block"), solid()],
-    "@": [sprite("coin")],
-    "%": [sprite("surprise"), solid(), "coin-surprise"],
-    "*": [sprite("surprise"), solid(), "mushroom-surprise"],
+    "@": [sprite("coin"), "coin"],
+    "%": [sprite("surprise"), solid(), "coinSurprise"],
+    "*": [sprite("surprise"), solid(), "mushroomSurprise"],
     "^": [sprite("unboxed"), solid()],
-    "(": [sprite("pipeTopLeft"), solid(), scale(0.5)],
-    ")": [sprite("pipeTopRight"), solid(), scale(0.5)],
+    "(": [sprite("pipeTopLeft"), solid(), scale(0.5), "pipe"],
+    ")": [sprite("pipeTopRight"), solid(), scale(0.5), "pipe"],
     "{": [sprite("pipeBottomLeft"), solid(), scale(0.5)],
     "}": [sprite("pipeBottomRight"), solid(), scale(0.5)],
-    "<": [sprite("evilShroom"), solid()],
-    "#": [sprite("mushroom"), solid()],
+    "<": [sprite("evilShroom"), solid(), "dangerous"],
+    "#": [sprite("mushroom"), solid(), "mushroom", body()],
   };
 
   const gameLevel = addLevel(map, levelCfg);
 
   const scoreLabel = add([
-    text("test"),
-    pos(15, 15),
+    text("points " + score),
+    pos(80, 0),
     layer("ui"),
-    { value: "test" },
+    { value: score },
   ]);
 
-  add([text("level " + "test", pos(4, 6))]);
+  const levelLabel = add([
+    text("level " + parseInt(level + 1)),
+    pos(0, 0),
+    layer("ui"),
+  ]);
+
+  function big() {
+    let timer = 0;
+    let isBig = false;
+    return {
+      update() {
+        if (isBig) {
+          timer -= dt();
+        }
+        if (timer <= 0) {
+          this.smallify();
+        }
+      },
+      isBig() {
+        return isBig;
+      },
+      smallify() {
+        this.scale = vec2(1);
+        CURRENT_JUMP_FORCE = JUMP_FORCE;
+        timer = 0;
+        isBig = false;
+      },
+      biggify(time) {
+        this.scale = vec2(2);
+        CURRENT_JUMP_FORCE = BIG_JUMP_FORCE;
+        timer = time;
+        isBig = true;
+      },
+    };
+  }
 
   const player = add([
     sprite("mario"),
     solid(),
     pos(30, 0),
     body(),
+    big(),
     origin("bot"),
   ]);
 
+  action("mushroom", (m) => {
+    m.move(30, 0);
+  });
+
+  action("dangerous", (d) => {
+    d.move(-ENEMY_SPEED, 0);
+  });
+
+  player.on("headbump", (obj) => {
+    if (obj.is("coinSurprise")) {
+      gameLevel.spawn("@", obj.gridPos.sub(0, 1));
+      destroy(obj);
+      gameLevel.spawn("^", obj.gridPos.sub(0, 0));
+    }
+    if (obj.is("mushroomSurprise")) {
+      gameLevel.spawn("#", obj.gridPos.sub(0, 1));
+      destroy(obj);
+      gameLevel.spawn("^", obj.gridPos.sub(0, 0));
+    }
+  });
+
+  player.collides("mushroom", (m) => {
+    destroy(m);
+    player.biggify(30);
+  });
+
+  player.collides("coin", (c) => {
+    destroy(c);
+    scoreLabel.value++;
+    scoreLabel.text = "points " + scoreLabel.value;
+  });
+
+  player.collides("dangerous", (d) => {
+    if (isJumping) {
+      destroy(d);
+      scoreLabel.value++;
+      scoreLabel.text = "points " + scoreLabel.value;
+    } else {
+      go("lose", { score: scoreLabel.value });
+    }
+  });
+
+  player.action(() => {
+    camPos(player.pos);
+    if (player.pos.y >= FALL_DEATH) {
+      go("lose", { score: scoreLabel.value });
+    }
+  });
+
+  player.collides("pipe", () => {
+    keyPress("down", () => {
+      go("game", { level: level + 1, score: scoreLabel.value });
+    });
+  });
+
   keyDown("left", () => {
     player.move(-MOVE_SPEED, 0);
+    levelLabel.move(-MOVE_SPEED, 0);
+    scoreLabel.move(-MOVE_SPEED, 0);
   });
 
   keyDown("right", () => {
     player.move(MOVE_SPEED, 0);
+    levelLabel.move(MOVE_SPEED, 0);
+    scoreLabel.move(MOVE_SPEED, 0);
+  });
+
+  player.action(() => {
+    if (player.grounded()) {
+      isJumping = false;
+    }
   });
 
   keyPress("space", () => {
     if (player.grounded()) {
-      player.jump(JUMP_FORCE);
+      isJumping = true;
+      player.jump(CURRENT_JUMP_FORCE);
     }
   });
 });
 
-start("game");
+scene("lose", ({ score }) => {
+  add([text(score, 32), origin("center"), pos(width() / 2, height() / 2)]);
+});
+
+start("game", { level: 0, score: 0 });
